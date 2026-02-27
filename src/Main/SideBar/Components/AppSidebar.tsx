@@ -11,6 +11,9 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import axios from "axios";
+import { useCallback, useEffect, useState } from "react";
+import useStore from "@/store/store";
 
 // This is sample data.
 const data = {
@@ -47,11 +50,42 @@ const data = {
       url: "/",
       icon: MessageCircle,
     },
-    
   ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const sessionsVersion = useStore((state) => state.sessionsVersion);
+  const [sessionHistory, setSessionHistory] = useState<any[]>([]);
+  const fetchSessionHistory = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/sessions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const list = response.data?.sessions ?? [];
+      setSessionHistory(Array.isArray(list) ? list : []);
+    } catch (error) {
+      console.error("Error getting session history:", error);
+    }
+  }, []);
+  useEffect(() => {
+    fetchSessionHistory();
+  }, [fetchSessionHistory, sessionsVersion]);
+
+  const navMainItems = [
+    {
+      title: "Your Chats",
+      url: "#",
+      isActive: true,
+      items: sessionHistory.map((session) => ({
+        title: session.title,
+        url: `/chat/${session.session_id}`,
+        icon: MessageCircle,
+      })),
+    },
+  ];
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -59,7 +93,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavProjects projects={data.projects} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMainItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

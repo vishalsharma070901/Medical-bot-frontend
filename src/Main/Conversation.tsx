@@ -67,7 +67,7 @@ function TypingIndicator() {
   )
 }
 
-const Conversation = ({ messages, isBotThinking = false, className = "" }: ConversationProps) => {
+const Conversation = ({ messages, isBotThinking = false, isLoadingHistory = false, className = "" }: ConversationProps) => {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -78,8 +78,23 @@ const Conversation = ({ messages, isBotThinking = false, className = "" }: Conve
     <div className={`flex flex-col flex-1 min-h-0 overflow-hidden ${className}`}>
       <ScrollArea className="flex-1 min-h-0 w-full overflow-hidden">
         <div className="flex flex-col gap-6 w-full max-w-3xl mx-auto px-4 py-6">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center mt-30  justify-center flex-1 min-h-[40vh] text-center text-muted-foreground">
+          {isLoadingHistory ? (
+            <div className="flex gap-3">
+              <div className="shrink-0 size-8 rounded-full flex items-center justify-center bg-muted">
+                <Bot className="size-4 text-muted-foreground" />
+              </div>
+              <div className="flex flex-col gap-1 max-w-[85%] items-start">
+                <div className="rounded-2xl rounded-bl-md px-4 py-3 text-sm shadow-sm bg-white border border-gray-200">
+                  <div className="flex gap-1">
+                    <span className="size-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:0ms]" />
+                    <span className="size-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:150ms]" />
+                    <span className="size-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex flex-col items-center mt-30 justify-center flex-1 min-h-[40vh] text-center text-muted-foreground">
               <Bot className="size-12 mb-3 opacity-40" />
               <p className="text-sm">
                 Send a message to start the conversation.
@@ -109,11 +124,19 @@ const Conversation = ({ messages, isBotThinking = false, className = "" }: Conve
                       }`}
                     >
                       {msg.role === "assistant" ? (
-                        <TypewriterMarkdown
-                          content={msg.content}
-                          messageId={msg.id}
-                          className="markdown-response "
-                        />
+                        msg.animate ? (
+                          <TypewriterMarkdown
+                            content={msg.content}
+                            messageId={msg.id}
+                            className="markdown-response "
+                          />
+                        ) : (
+                          <div className="markdown-response">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.content.replace(/\n{3,}/g, "\n\n")}
+                            </ReactMarkdown>
+                          </div>
+                        )
                       ) : (
                         <p>{msg.content}</p>
                       )}
